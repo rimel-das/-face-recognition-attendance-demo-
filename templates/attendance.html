@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% block title %}Take Attendance — FaceAttend{% endblock %}
+{% block page_title %}Take Attendance{% endblock %}
+
+{% block content %}
+<div class="row g-4 justify-content-center">
+
+  <!-- Camera column -->
+  <div class="col-lg-6">
+    <div class="app-card">
+      <div class="card-header-custom">
+        <i class="bi bi-camera-video-fill" style="color:var(--accent);"></i>
+        Live Camera Feed
+        <!-- Pulsing dot when scanning -->
+        <span id="scan-indicator" style="display:none; margin-left:auto;">
+          <span class="badge" style="background:rgba(75,210,143,0.15); color:#4bd28f; font-size:0.7rem;">
+            <span class="blink-dot"></span> Scanning
+          </span>
+        </span>
+      </div>
+
+      <div class="card-body-custom">
+        <div class="webcam-wrap mb-3">
+          <video id="video" autoplay playsinline muted></video>
+        </div>
+
+        <!-- Hidden canvas -->
+        <canvas id="canvas" style="display:none;"></canvas>
+
+        <button class="btn btn-accent w-100 py-2" id="scan-btn" onclick="scanFace()">
+          <i class="bi bi-person-bounding-box me-2"></i>Scan Face
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result column -->
+  <div class="col-lg-5">
+    <div class="app-card">
+      <div class="card-header-custom">
+        <i class="bi bi-person-check-fill" style="color:#4bd28f;"></i>
+        Recognition Result
+      </div>
+      <div class="card-body-custom">
+
+        <!-- Placeholder when idle -->
+        <div id="idle-placeholder" class="text-center py-4" style="color:var(--text-muted-custom);">
+          <i class="bi bi-person-bounding-box" style="font-size:3rem; opacity:0.3;"></i>
+          <p style="font-size:0.85rem; margin-top:0.75rem;">
+            Press <strong style="color:var(--accent);">Scan Face</strong> to identify and mark attendance.
+          </p>
+        </div>
+
+        <!-- Spinner while processing -->
+        <div id="scanning-spinner" class="text-center py-4" style="display:none;">
+          <div class="spinner-border mb-2" style="color:var(--accent);" role="status">
+            <span class="visually-hidden">Scanning…</span>
+          </div>
+          <p style="font-size:0.8rem; color:var(--text-muted-custom);">Recognising face…</p>
+        </div>
+
+        <!-- Result card shown after scan -->
+        <div id="result-card" style="display:none;">
+          <!-- Success -->
+          <div id="result-success" style="display:none;">
+            <div class="text-center mb-3">
+              <div style="width:72px; height:72px; background:rgba(75,210,143,0.12);
+                          border-radius:50%; margin:0 auto; display:flex;
+                          align-items:center; justify-content:center;">
+                <i class="bi bi-person-check-fill" style="font-size:2rem; color:#4bd28f;"></i>
+              </div>
+            </div>
+            <div class="text-center">
+              <h5 id="result-name" style="color:#e0e6f0; margin-bottom:4px;"></h5>
+              <span id="result-sid" class="badge"
+                    style="background:var(--accent-glow); color:var(--accent); font-family:monospace;"></span>
+            </div>
+            <div id="result-msg-ok" class="status-box success" style="margin-top:1rem;"></div>
+          </div>
+
+          <!-- Error / Not recognised -->
+          <div id="result-error" style="display:none;">
+            <div class="text-center mb-3">
+              <div style="width:72px; height:72px; background:rgba(248,113,113,0.12);
+                          border-radius:50%; margin:0 auto; display:flex;
+                          align-items:center; justify-content:center;">
+                <i class="bi bi-person-x-fill" style="font-size:2rem; color:#f87171;"></i>
+              </div>
+            </div>
+            <div id="result-msg-err" class="status-box error" style="margin-top:0.5rem;"></div>
+          </div>
+        </div>
+
+        <!-- Recent scans mini-log -->
+        <div id="mini-log" style="margin-top:1.5rem; display:none;">
+          <p style="font-size:0.72rem; color:var(--text-muted-custom); text-transform:uppercase; letter-spacing:0.05em;">
+            Session Log
+          </p>
+          <ul id="log-list" style="list-style:none; padding:0; margin:0; font-size:0.8rem;"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  /* Pulsing recording dot */
+  .blink-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: #4bd28f;
+    border-radius: 50%;
+    margin-right: 4px;
+    animation: blink 1s step-start infinite;
+    vertical-align: middle;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const video   = document.getElementById('video');
+  const canvas  = document.getElementById('canvas');
+
+  // ── Start camera ─────────────────────────────────────────────────────
+  async function startCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+      });
+      video.srcObject = stream;
+    } catch (err) {
+      document.getElementById('idle-placeholder').innerHTML =
+        `<i class="bi bi-exclamation-triangle" style="font-size:2rem; color:#f87171;"></i>
+         <p class="mt-2" style="color:#f87171; font-size:0.85rem;">Camera error: ${err.message}</p>`;
+    }
+  }
+
+  // ── Capture frame → base64 ───────────────────────────────────────────
+  function captureFrame() {
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    return canvas.toDataURL('image/jpeg', 0.9);
+  }
+
+  // ── Send frame to API for recognition ───────────────────────────────
+  async function scanFace() {
+    if (!video.srcObject) return;
+
+    const imageData = captureFrame();
+
+    // Show spinner, hide other sections
+    document.getElementById('idle-placeholder').style.display = 'none';
+    document.getElementById('result-card').style.display      = 'none';
+    document.getElementById('scanning-spinner').style.display = 'block';
+    document.getElementById('scan-indicator').style.display   = 'inline';
+    document.getElementById('scan-btn').disabled = true;
+
+    try {
+      const resp = await fetch('/api/recognize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: imageData })
+      });
+      const data = await resp.json();
+
+      // Hide spinner
+      document.getElementById('scanning-spinner').style.display = 'none';
+      document.getElementById('result-card').style.display      = 'block';
+
+      if (data.success) {
+        // Show success result
+        document.getElementById('result-success').style.display = 'block';
+        document.getElementById('result-error').style.display   = 'none';
+        document.getElementById('result-name').textContent      = data.student_name || '';
+        document.getElementById('result-sid').textContent       = 'Confidence: ' + (1 - (data.distance || 0)).toFixed(2);
+        document.getElementById('result-msg-ok').textContent    = data.message;
+        addToLog(data.student_name, 'success');
+      } else {
+        // Show error result
+        document.getElementById('result-success').style.display = 'none';
+        document.getElementById('result-error').style.display   = 'block';
+        document.getElementById('result-msg-err').textContent   = data.message;
+
+        // If it was a duplicate mark, still show name if provided
+        if (data.student_name) {
+          document.getElementById('result-success').style.display = 'block';
+          document.getElementById('result-error').style.display   = 'none';
+          document.getElementById('result-name').textContent      = data.student_name;
+          document.getElementById('result-sid').textContent       = 'Already marked today';
+          document.getElementById('result-msg-ok').textContent    = data.message;
+          document.getElementById('result-msg-ok').className      = 'status-box info';
+          addToLog(data.student_name, 'info');
+        } else {
+          addToLog(data.message, 'error');
+        }
+      }
+    } catch (err) {
+      document.getElementById('scanning-spinner').style.display = 'none';
+      document.getElementById('result-card').style.display      = 'block';
+      document.getElementById('result-success').style.display   = 'none';
+      document.getElementById('result-error').style.display     = 'block';
+      document.getElementById('result-msg-err').textContent     = 'Network error: ' + err.message;
+    } finally {
+      document.getElementById('scan-indicator').style.display = 'none';
+      document.getElementById('scan-btn').disabled = false;
+    }
+  }
+
+  // ── Mini session log ─────────────────────────────────────────────────
+  function addToLog(text, type) {
+    document.getElementById('mini-log').style.display = 'block';
+    const list = document.getElementById('log-list');
+    const now  = new Date().toLocaleTimeString('en-GB');
+    const icon = type === 'success' ? '✅' : type === 'info' ? 'ℹ️' : '❌';
+    const li   = document.createElement('li');
+    li.style.cssText = `
+      display:flex; justify-content:space-between; align-items:center;
+      padding:5px 0; border-bottom:1px solid var(--border-color);
+      color: ${type === 'success' ? '#4bd28f' : type === 'info' ? 'var(--accent)' : '#f87171'};
+    `;
+    li.innerHTML = `<span>${icon} ${text}</span><span class="time-pill">${now}</span>`;
+    list.prepend(li);
+    // Keep only last 5 entries
+    while (list.children.length > 5) list.removeChild(list.lastChild);
+  }
+
+  startCamera();
+</script>
+{% endblock %}

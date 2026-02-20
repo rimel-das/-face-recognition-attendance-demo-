@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — FaceAttend{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- ── Stat cards row ── -->
+<div class="row g-3 mb-4">
+
+  <!-- Total students -->
+  <div class="col-sm-6 col-lg-4">
+    <div class="stat-card">
+      <div class="stat-icon blue"><i class="bi bi-people-fill"></i></div>
+      <div>
+        <div class="stat-val">{{ total_students }}</div>
+        <div class="stat-label">Registered Students</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Today's attendance -->
+  <div class="col-sm-6 col-lg-4">
+    <div class="stat-card">
+      <div class="stat-icon green"><i class="bi bi-check2-circle"></i></div>
+      <div>
+        <div class="stat-val">{{ today_count }}</div>
+        <div class="stat-label">Present Today ({{ today }})</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Absent estimate -->
+  <div class="col-sm-6 col-lg-4">
+    <div class="stat-card">
+      <div class="stat-icon purple"><i class="bi bi-person-dash-fill"></i></div>
+      <div>
+        <div class="stat-val">{{ [total_students - today_count, 0] | max }}</div>
+        <div class="stat-label">Not Yet Marked</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Recent attendance log ── -->
+<div class="app-card">
+  <div class="card-header-custom">
+    <i class="bi bi-clock-history" style="color:var(--accent);"></i>
+    Recent Attendance Log
+    <span class="ms-auto badge" style="background:var(--sidebar-hover); color:var(--text-muted-custom); font-size:0.7rem;">
+      Last 10 records
+    </span>
+  </div>
+
+  <div class="card-body-custom p-0">
+    {% if recent_log %}
+    <div class="table-responsive">
+      <table class="table app-table mb-0">
+        <thead>
+          <tr>
+            <th class="ps-3">Student ID</th>
+            <th>Name</th>
+            <th>Date</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in recent_log %}
+          <tr>
+            <td class="ps-3">
+              <span class="badge" style="background:var(--accent-glow); color:var(--accent); font-family:monospace;">
+                {{ row.student_id }}
+              </span>
+            </td>
+            <td>{{ row.student_name }}</td>
+            <td>{{ row.date }}</td>
+            <td><span class="time-pill">{{ row.time }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5" style="color:var(--text-muted-custom);">
+      <i class="bi bi-inbox" style="font-size:2.5rem; opacity:0.4;"></i>
+      <p class="mt-2 mb-0" style="font-size:0.875rem;">No attendance records yet.</p>
+      <a href="/attendance" class="btn btn-sm btn-accent mt-3">
+        <i class="bi bi-camera-video-fill me-1"></i>Take Attendance
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── Quick action buttons ── -->
+<div class="row g-3 mt-2">
+  <div class="col-sm-6">
+    <a href="/register" class="btn btn-accent w-100 py-2">
+      <i class="bi bi-person-plus-fill me-2"></i>Register New Student
+    </a>
+  </div>
+  <div class="col-sm-6">
+    <a href="/report" class="btn btn-outline-secondary w-100 py-2">
+      <i class="bi bi-file-earmark-bar-graph me-2"></i>View Full Report
+    </a>
+  </div>
+</div>
+{% endblock %}

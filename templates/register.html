@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}Register Student — FaceAttend{% endblock %}
+{% block page_title %}Register Student{% endblock %}
+
+{% block content %}
+<div class="row g-4 justify-content-center">
+
+  <!-- Left column: webcam -->
+  <div class="col-lg-5">
+    <div class="app-card h-100">
+      <div class="card-header-custom">
+        <i class="bi bi-camera-video-fill" style="color:var(--accent);"></i>
+        Live Camera
+      </div>
+      <div class="card-body-custom">
+        <!-- Webcam preview -->
+        <div class="webcam-wrap mb-3">
+          <video id="video" autoplay playsinline muted></video>
+        </div>
+
+        <!-- Hidden canvas used to capture frame -->
+        <canvas id="canvas" style="display:none;"></canvas>
+
+        <!-- Captured snapshot preview -->
+        <div id="snapshot-wrap" style="display:none;" class="mb-3">
+          <p class="text-muted" style="font-size:0.75rem; margin-bottom:4px;">Captured frame:</p>
+          <div class="webcam-wrap">
+            <img id="snapshot-img" src="" alt="snapshot" style="width:100%; border-radius:10px;" />
+          </div>
+        </div>
+
+        <!-- Capture button -->
+        <button class="btn btn-accent w-100" id="capture-btn" onclick="capturePhoto()">
+          <i class="bi bi-camera-fill me-2"></i>Capture Photo
+        </button>
+        <button class="btn btn-outline-secondary w-100 mt-2" id="retake-btn"
+                style="display:none;" onclick="retakePhoto()">
+          <i class="bi bi-arrow-counterclockwise me-2"></i>Retake
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column: form -->
+  <div class="col-lg-5">
+    <div class="app-card h-100">
+      <div class="card-header-custom">
+        <i class="bi bi-person-plus-fill" style="color:var(--accent);"></i>
+        Student Details
+      </div>
+      <div class="card-body-custom">
+
+        <!-- Instructions -->
+        <div class="mb-3 p-3" style="background:var(--accent-glow); border:1px solid rgba(110,168,254,0.2); border-radius:8px;">
+          <p class="mb-0" style="font-size:0.8rem; color:var(--accent);">
+            <i class="bi bi-info-circle me-1"></i>
+            Position your face clearly in the camera, then capture a photo before submitting.
+          </p>
+        </div>
+
+        <!-- Form fields -->
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.85rem; color:#aab4c8;">Full Name</label>
+          <input
+            type="text" id="student-name"
+            class="form-control"
+            style="background:var(--sidebar-hover); border-color:var(--border-color); color:#e0e6f0;"
+            placeholder="e.g. Alice Johnson"
+          />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.85rem; color:#aab4c8;">Student ID</label>
+          <input
+            type="text" id="student-id"
+            class="form-control"
+            style="background:var(--sidebar-hover); border-color:var(--border-color); color:#e0e6f0;"
+            placeholder="e.g. STU001"
+          />
+          <div class="form-text" style="color:var(--text-muted-custom); font-size:0.72rem;">
+            Must be unique across all students.
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <button
+          class="btn btn-accent w-100 py-2 mt-2"
+          id="register-btn"
+          onclick="registerStudent()"
+        >
+          <i class="bi bi-person-check-fill me-2"></i>Register Student
+        </button>
+
+        <!-- Status message shown inline after submission -->
+        <div id="status-msg" class="status-box"></div>
+
+        <!-- Spinner while waiting -->
+        <div id="spinner" class="text-center mt-3" style="display:none;">
+          <div class="spinner-border" style="color:var(--accent); width:1.5rem; height:1.5rem;" role="status">
+            <span class="visually-hidden">Processing…</span>
+          </div>
+          <p style="font-size:0.8rem; color:var(--text-muted-custom); margin-top:6px;">
+            Detecting face & saving…
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const video       = document.getElementById('video');
+  const canvas      = document.getElementById('canvas');
+  const snapshotImg = document.getElementById('snapshot-img');
+  const snapshotWrap= document.getElementById('snapshot-wrap');
+  const captureBtn  = document.getElementById('capture-btn');
+  const retakeBtn   = document.getElementById('retake-btn');
+
+  let capturedImage = null;   // stores base64 string after capture
+
+  // ── Start webcam stream ──────────────────────────────────────────────
+  async function startCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+      });
+      video.srcObject = stream;
+    } catch (err) {
+      showStatus('status-msg', 'Camera access denied: ' + err.message, 'error');
+    }
+  }
+
+  // ── Capture a frame from the video ──────────────────────────────────
+  function capturePhoto() {
+    if (!video.srcObject) {
+      showStatus('status-msg', 'Camera not started.', 'error');
+      return;
+    }
+    // Draw current video frame onto hidden canvas
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+
+    capturedImage = canvas.toDataURL('image/jpeg', 0.9);
+
+    // Show snapshot preview
+    snapshotImg.src = capturedImage;
+    snapshotWrap.style.display = 'block';
+    captureBtn.style.display   = 'none';
+    retakeBtn.style.display    = 'block';
+    video.style.display        = 'none';
+  }
+
+  // ── Retake — go back to live feed ───────────────────────────────────
+  function retakePhoto() {
+    capturedImage = null;
+    snapshotWrap.style.display = 'none';
+    captureBtn.style.display   = 'block';
+    retakeBtn.style.display    = 'none';
+    video.style.display        = 'block';
+    document.getElementById('status-msg').className = 'status-box';
+  }
+
+  // ── Submit registration form ─────────────────────────────────────────
+  async function registerStudent() {
+    const name       = document.getElementById('student-name').value.trim();
+    const student_id = document.getElementById('student-id').value.trim();
+
+    // Validation
+    if (!name)       return showStatus('status-msg', 'Please enter the student name.', 'error');
+    if (!student_id) return showStatus('status-msg', 'Please enter a Student ID.', 'error');
+    if (!capturedImage) return showStatus('status-msg', 'Please capture a photo first.', 'error');
+
+    // Show spinner
+    document.getElementById('spinner').style.display = 'block';
+    document.getElementById('register-btn').disabled = true;
+
+    try {
+      const resp = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, student_id, image: capturedImage })
+      });
+      const data = await resp.json();
+      showStatus('status-msg', data.message, data.success ? 'success' : 'error');
+
+      if (data.success) {
+        // Reset form on success
+        document.getElementById('student-name').value = '';
+        document.getElementById('student-id').value   = '';
+        retakePhoto();
+      }
+    } catch (err) {
+      showStatus('status-msg', 'Network error: ' + err.message, 'error');
+    } finally {
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('register-btn').disabled = false;
+    }
+  }
+
+  // Auto-start camera when page loads
+  startCamera();
+</script>
+{% endblock %}

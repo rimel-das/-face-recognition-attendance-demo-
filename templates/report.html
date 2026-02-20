@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Report — FaceAttend{% endblock %}
+{% block page_title %}Attendance Report{% endblock %}
+
+{% block content %}
+
+<!-- ── Filters row ── -->
+<div class="app-card mb-4">
+  <div class="card-header-custom">
+    <i class="bi bi-funnel-fill" style="color:var(--accent);"></i>
+    Filter Records
+  </div>
+  <div class="card-body-custom">
+    <form method="GET" action="/report" class="row g-3 align-items-end">
+
+      <!-- Date filter -->
+      <div class="col-sm-4">
+        <label class="form-label" style="font-size:0.82rem; color:#aab4c8;">Date</label>
+        <input
+          type="date"
+          name="date"
+          value="{{ date_filter }}"
+          class="form-control"
+          style="background:var(--sidebar-hover); border-color:var(--border-color); color:#e0e6f0;"
+        />
+      </div>
+
+      <!-- Name filter -->
+      <div class="col-sm-5">
+        <label class="form-label" style="font-size:0.82rem; color:#aab4c8;">Student Name</label>
+        <input
+          type="text"
+          name="name"
+          value="{{ name_filter }}"
+          placeholder="Search by name…"
+          class="form-control"
+          style="background:var(--sidebar-hover); border-color:var(--border-color); color:#e0e6f0;"
+        />
+      </div>
+
+      <!-- Buttons -->
+      <div class="col-sm-3 d-flex gap-2">
+        <button type="submit" class="btn btn-accent flex-grow-1">
+          <i class="bi bi-search me-1"></i>Filter
+        </button>
+        <a href="/report" class="btn btn-outline-secondary">
+          <i class="bi bi-x-lg"></i>
+        </a>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- ── Results table ── -->
+<div class="app-card">
+  <div class="card-header-custom">
+    <i class="bi bi-table" style="color:var(--accent);"></i>
+    Results
+    <!-- Record count badge -->
+    <span class="badge ms-2" style="background:var(--accent-glow); color:var(--accent);">
+      {{ records | length }} record{{ 's' if records | length != 1 else '' }}
+    </span>
+
+    <!-- Export CSV button (passes current filters) -->
+    <a
+      href="/api/report/export?date={{ date_filter }}&name={{ name_filter }}"
+      class="btn btn-sm ms-auto"
+      style="background:rgba(75,210,143,0.12); color:#4bd28f; border:1px solid rgba(75,210,143,0.3);"
+    >
+      <i class="bi bi-download me-1"></i>Export CSV
+    </a>
+  </div>
+
+  <div class="card-body-custom p-0">
+    {% if records %}
+    <div class="table-responsive">
+      <table class="table app-table mb-0">
+        <thead>
+          <tr>
+            <th class="ps-3">#</th>
+            <th>Student ID</th>
+            <th>Name</th>
+            <th>Date</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in records %}
+          <tr>
+            <td class="ps-3" style="color:var(--text-muted-custom);">{{ loop.index }}</td>
+            <td>
+              <span class="badge"
+                    style="background:var(--accent-glow); color:var(--accent); font-family:monospace; font-size:0.78rem;">
+                {{ row.student_id }}
+              </span>
+            </td>
+            <td style="font-weight:500; color:#e0e6f0;">{{ row.student_name }}</td>
+            <td style="color:#aab4c8;">{{ row.date }}</td>
+            <td><span class="time-pill">{{ row.time }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5" style="color:var(--text-muted-custom);">
+      <i class="bi bi-search" style="font-size:2.5rem; opacity:0.3;"></i>
+      <p class="mt-2 mb-0" style="font-size:0.875rem;">
+        {% if date_filter or name_filter %}
+          No records found for the selected filters.
+        {% else %}
+          No attendance records yet. Start by taking attendance.
+        {% endif %}
+      </p>
+      {% if date_filter or name_filter %}
+      <a href="/report" class="btn btn-sm btn-outline-secondary mt-3">Clear Filters</a>
+      {% else %}
+      <a href="/attendance" class="btn btn-sm btn-accent mt-3">
+        <i class="bi bi-camera-video-fill me-1"></i>Take Attendance
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

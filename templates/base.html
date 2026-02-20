@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Face Attendance{% endblock %}</title>
+
+  <!-- Bootstrap 5 CSS (dark-theme friendly) -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <!-- Bootstrap Icons -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* ------------------------------------------------------------------ */
+    /*  Global dark-theme variables                                        */
+    /* ------------------------------------------------------------------ */
+    :root {
+      --sidebar-width: 240px;
+      --accent: #6ea8fe;          /* Bootstrap blue-400 */
+      --accent-glow: rgba(110, 168, 254, 0.15);
+      --sidebar-bg: #0d0f14;
+      --sidebar-hover: #1a1f2e;
+      --card-bg: #12151f;
+      --body-bg: #0a0c13;
+      --border-color: #1e2535;
+      --text-muted-custom: #6c7a9b;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Layout                                                             */
+    /* ------------------------------------------------------------------ */
+    body {
+      background-color: var(--body-bg);
+      color: #cdd3e0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* Sidebar */
+    #sidebar {
+      width: var(--sidebar-width);
+      min-height: 100vh;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border-color);
+      position: fixed;
+      top: 0; left: 0;
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      transition: transform 0.25s ease;
+    }
+
+    .sidebar-brand {
+      padding: 1.5rem 1.25rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .sidebar-brand .brand-icon {
+      width: 36px; height: 36px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #000;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .sidebar-brand h6 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #e0e6f0;
+      margin: 0;
+    }
+    .sidebar-brand small {
+      color: var(--text-muted-custom);
+      font-size: 0.7rem;
+    }
+
+    /* Nav links */
+    .sidebar-nav { padding: 1rem 0.75rem; flex: 1; }
+    .nav-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted-custom);
+      padding: 0.5rem 0.5rem 0.25rem;
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0.75rem;
+      border-radius: 8px;
+      color: #8fa0c0;
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: background 0.15s, color 0.15s;
+      margin-bottom: 2px;
+    }
+    .sidebar-link:hover {
+      background: var(--sidebar-hover);
+      color: #cdd3e0;
+    }
+    .sidebar-link.active {
+      background: var(--accent-glow);
+      color: var(--accent);
+      border: 1px solid rgba(110, 168, 254, 0.25);
+    }
+    .sidebar-link i { font-size: 1.05rem; width: 20px; text-align: center; }
+
+    /* Main content area */
+    #main {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top bar */
+    .topbar {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .topbar .page-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #e0e6f0;
+      margin: 0;
+    }
+    .topbar .time-badge {
+      background: var(--sidebar-hover);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0.3rem 0.75rem;
+      font-size: 0.78rem;
+      color: var(--text-muted-custom);
+      font-family: 'Courier New', monospace;
+    }
+
+    /* Page content */
+    .page-content { padding: 1.75rem 1.5rem; flex: 1; }
+
+    /* ------------------------------------------------------------------ */
+    /*  Card styles                                                        */
+    /* ------------------------------------------------------------------ */
+    .app-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .app-card .card-header-custom {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #e0e6f0;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .app-card .card-body-custom { padding: 1.25rem; }
+
+    /* Stat cards */
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .stat-icon {
+      width: 48px; height: 48px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+    .stat-icon.blue  { background: rgba(110,168,254,0.12); color: var(--accent); }
+    .stat-icon.green { background: rgba(75,210,143,0.12);  color: #4bd28f; }
+    .stat-icon.purple{ background: rgba(178,128,254,0.12); color: #b280fe; }
+    .stat-val {
+      font-size: 1.75rem; font-weight: 700; color: #e0e6f0; line-height: 1;
+    }
+    .stat-label { font-size: 0.78rem; color: var(--text-muted-custom); margin-top: 2px; }
+
+    /* ------------------------------------------------------------------ */
+    /*  Webcam / capture                                                   */
+    /* ------------------------------------------------------------------ */
+    .webcam-wrap {
+      position: relative;
+      background: #0a0c13;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+    .webcam-wrap video,
+    .webcam-wrap canvas { width: 100%; display: block; border-radius: 10px; }
+
+    /* Overlay corners for scanner feel */
+    .webcam-wrap::before,
+    .webcam-wrap::after {
+      content: '';
+      position: absolute;
+      width: 24px; height: 24px;
+      border-color: var(--accent);
+      border-style: solid;
+      z-index: 10;
+      pointer-events: none;
+    }
+    .webcam-wrap::before {
+      top: 10px; left: 10px;
+      border-width: 2px 0 0 2px;
+    }
+    .webcam-wrap::after {
+      bottom: 10px; right: 10px;
+      border-width: 0 2px 2px 0;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Alerts / status messages                                           */
+    /* ------------------------------------------------------------------ */
+    .status-box {
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      display: none;   /* shown via JS */
+      margin-top: 1rem;
+    }
+    .status-box.success {
+      background: rgba(75,210,143,0.12);
+      border: 1px solid rgba(75,210,143,0.3);
+      color: #4bd28f;
+      display: block;
+    }
+    .status-box.error {
+      background: rgba(248,113,113,0.12);
+      border: 1px solid rgba(248,113,113,0.3);
+      color: #f87171;
+      display: block;
+    }
+    .status-box.info {
+      background: rgba(110,168,254,0.12);
+      border: 1px solid rgba(110,168,254,0.3);
+      color: var(--accent);
+      display: block;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Table                                                              */
+    /* ------------------------------------------------------------------ */
+    .app-table { font-size: 0.85rem; }
+    .app-table thead tr {
+      background: var(--sidebar-hover);
+      color: var(--text-muted-custom);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .app-table tbody tr { border-color: var(--border-color); }
+    .app-table tbody tr:hover { background: var(--sidebar-hover); }
+
+    /* ------------------------------------------------------------------ */
+    /*  Buttons                                                            */
+    /* ------------------------------------------------------------------ */
+    .btn-accent {
+      background: var(--accent);
+      color: #000;
+      font-weight: 600;
+      border: none;
+    }
+    .btn-accent:hover { background: #92bcfe; color: #000; }
+
+    /* ------------------------------------------------------------------ */
+    /*  Badge for log                                                      */
+    /* ------------------------------------------------------------------ */
+    .time-pill {
+      font-size: 0.72rem;
+      background: var(--sidebar-hover);
+      border: 1px solid var(--border-color);
+      border-radius: 99px;
+      padding: 0.2rem 0.6rem;
+      color: var(--text-muted-custom);
+      font-family: monospace;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Mobile — collapse sidebar                                          */
+    /* ------------------------------------------------------------------ */
+    @media (max-width: 768px) {
+      #sidebar { transform: translateX(-100%); }
+      #sidebar.open { transform: translateX(0); }
+      #main { margin-left: 0; }
+      .topbar .hamburger { display: flex !important; }
+    }
+    .hamburger {
+      display: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: #cdd3e0;
+      background: none;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<nav id="sidebar">
+  <!-- Brand -->
+  <div class="sidebar-brand d-flex align-items-center gap-2">
+    <div class="brand-icon"><i class="bi bi-camera-fill"></i></div>
+    <div>
+      <h6>FaceAttend</h6>
+      <small>Recognition System</small>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="sidebar-nav">
+    <div class="nav-label">Menu</div>
+    <a href="/"           class="sidebar-link {% if request.path == '/' %}active{% endif %}">
+      <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+    <a href="/register"   class="sidebar-link {% if request.path == '/register' %}active{% endif %}">
+      <i class="bi bi-person-plus-fill"></i> Register Student
+    </a>
+    <a href="/attendance" class="sidebar-link {% if request.path == '/attendance' %}active{% endif %}">
+      <i class="bi bi-camera-video-fill"></i> Take Attendance
+    </a>
+    <a href="/report"     class="sidebar-link {% if request.path == '/report' %}active{% endif %}">
+      <i class="bi bi-file-earmark-bar-graph-fill"></i> Report
+    </a>
+  </div>
+
+  <!-- Footer info -->
+  <div style="padding:1rem; border-top:1px solid var(--border-color);">
+    <small style="color:var(--text-muted-custom); font-size:0.7rem;">
+      <i class="bi bi-circle-fill text-success" style="font-size:0.5rem;"></i>
+      &nbsp;System Active
+    </small>
+  </div>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<div id="main">
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="d-flex align-items-center gap-3">
+      <button class="hamburger" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+      </button>
+      <h1 class="page-title">{% block page_title %}Page{% endblock %}</h1>
+    </div>
+    <div class="time-badge" id="live-clock">--:--:--</div>
+  </div>
+
+  <!-- Page content injected here -->
+  <div class="page-content">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  /* Live clock in topbar */
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('live-clock').textContent =
+      now.toLocaleTimeString('en-GB');
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  /* Mobile sidebar toggle */
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+  }
+
+  /* Helper: show an inline status message */
+  function showStatus(elementId, message, type) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    el.textContent = message;
+    el.className = 'status-box ' + type;   // 'success' | 'error' | 'info'
+  }
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>
