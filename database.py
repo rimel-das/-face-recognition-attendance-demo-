@@ -5,10 +5,20 @@ Handles all SQLite database operations for the Face Attendance App.
 Two tables:
   - students   : stores student info and path to face encoding file
   - attendance : stores daily attendance records (UNIQUE per student per day)
+
+Best practices:
+  - Always use context managers for connections
+  - SQL parameters are used to prevent injection
+  - Timestamps are auto-managed by SQLite
 """
 
 import sqlite3
 import os
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Path to the SQLite database file
 DB_PATH = "attendance.db"

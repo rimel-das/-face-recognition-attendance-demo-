@@ -11,6 +11,7 @@ import os
 import base64
 import pickle
 import io
+import csv
 from datetime import datetime
 
 import cv2
@@ -266,8 +267,6 @@ def api_export_csv():
     Export the attendance report as a CSV file.
     Accepts optional query params: date, name
     """
-    import csv
-
     date_filter = request.args.get("date") or None
     name_filter = request.args.get("name") or None
     records = get_attendance_report(date_filter=date_filter, name_filter=name_filter)
@@ -300,5 +299,6 @@ if __name__ == "__main__":
     print("  http://127.0.0.1:5000")
     print("=" * 55)
     init_db()
-    # debug=True restarts on code changes; set False for production
-    app.run(debug=True, port=5000)
+    # For production, set debug=False and use a production WSGI server
+    # Example: gunicorn -w 4 -b 0.0.0.0:5000 app:app
+    app.run(debug=True, port=5000, threaded=True)
