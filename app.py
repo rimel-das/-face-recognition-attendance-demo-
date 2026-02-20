@@ -299,6 +299,4 @@ if __name__ == "__main__":
     print("  http://127.0.0.1:5000")
     print("=" * 55)
     init_db()
-    # For production, set debug=False and use a production WSGI server
-    # Example: gunicorn -w 4 -b 0.0.0.0:5000 app:app
-    app.run(debug=True, port=5000, threaded=True)
+    app.run(debug=True, port=5000)
