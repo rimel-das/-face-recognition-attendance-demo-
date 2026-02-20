@@ -1,0 +1,29 @@
+# Byte-order mark for UTF-8
+* text=auto
+
+# Python files
+*.py text eol=lf
+
+# Shell scripts
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Windows batch files
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Git files
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
+# Documentation
+*.md text eol=lf
+*.txt text eol=lf
+
+# Binary files
+*.db binary
+*.pkl binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.gif binary
